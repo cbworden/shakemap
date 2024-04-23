@@ -1,5 +1,7 @@
 ## main
 
+## v4.3.0 / 2024-04-23
+ - Release v4.3.0: Now using FFSimmer rather than PS2FF.
  - Fix to receive_amps.
  - Refactor docs a bunch.
  - Add optional persistence of version history back into sm_create command.
