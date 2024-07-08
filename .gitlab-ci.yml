@@ -2,7 +2,7 @@
 default:
   image: ${DEVOPS_REGISTRY}usgs/python:3.9
   tags:
-    - development
+    - build
 
   before_script:
     - python --version
