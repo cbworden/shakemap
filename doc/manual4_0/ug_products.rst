@@ -253,7 +253,7 @@ dictionary of attributes:
 +-----------+------------------------------------------------------+
 | digits    | Number of significant digits to use for the values.  |
 +-----------+------------------------------------------------------+
-| xmin      | The eastern boundary of the grid (degrees longitude) |
+| xmin      | The western boundary of the grid (degrees longitude) |
 +-----------+------------------------------------------------------+
 | xmax      | The eastern boundary of the grid (degrees longitude) |
 +-----------+------------------------------------------------------+
