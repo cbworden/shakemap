@@ -1,5 +1,9 @@
 ## main
 
+## v4.4.0b / 2024-09-06
+    - Pin to shakemap-modules v1.0.23
+    - Pin to shakemap-modules v1.0.21
+
 ## v4.4.0a / 2024-08-23
     - Pin to shakemap-modules v1.0.20
 
