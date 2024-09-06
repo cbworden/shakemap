@@ -12,7 +12,7 @@ readme = "README.md"
 requires-python = ">=3.9,<3.10"
 
 dependencies = [
-    "shakemap-modules[all]==1.0.20",
+    "shakemap-modules[all]==1.0.21",
     "esi-utils-comcat>=0.0.1",
     "python-daemon>=3.0",
     "lockfile>=0.12.2",
