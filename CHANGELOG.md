@@ -1,5 +1,9 @@
 ## main
 
+## v4.4.0c / 2024-09-06
+    - Pin to shakemap-modules v1.0.23
+    - Implicitly pin to esi-shakelib v1.0.14
+
 ## v4.4.0b / 2024-09-06
     - Pin to shakemap-modules v1.0.23
     - Pin to shakemap-modules v1.0.21
