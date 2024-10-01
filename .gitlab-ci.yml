@@ -1,6 +1,6 @@
 # Need to use Conda to build Shakemap, pull the Docker image
 default:
-  image: ${DEVOPS_REGISTRY}usgs/python:3.9
+  image: code.usgs.gov:5001/devops/images/usgs/python:3.12-build
   tags:
     - build
 
@@ -46,7 +46,7 @@ stages:
 .versions:
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.9"]
+      - PYTHON_VERSION: ["3.12"]
 
 # Create reusable build configuration for referencing
 .build_config:
@@ -97,7 +97,7 @@ pages:
     - <<: *upstream
       when: on_success
   variables:
-    PYTHON_VERSION: "3.9"
+    PYTHON_VERSION: "3.12"
 
   script:
     # Run build configuration script
