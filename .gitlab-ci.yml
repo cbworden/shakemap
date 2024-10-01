@@ -57,7 +57,7 @@ stages:
     - echo "***********************************************"
     - conda list
     - echo "***********************************************"
-    - strec_cfg update --datafolder $HOME/.strec/data --slab --gcmt
+      #    - strec_cfg update --datafolder $HOME/.strec/data --slab --gcmt
 
 # Create test job
 run tests and coverage:
