@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 # constants
-DEFAULT_PYVER=3.9
+# DEFAULT_PYVER=3.12
 
 usage()
 {
-    echo "Usage: install.sh  [ -p Python version (3.9) ]
+#    echo "Usage: install.sh  [ -p Python version (3.12) ]
+    echo "Usage: install.sh  
                   [ -d  Install developer tools ]
             "
     exit 2
@@ -30,16 +31,16 @@ source $prof
 
 
 # Parse the command line arguments passed in by the user
-PYVER=$DEFAULT_PYVER
+# PYVER=$DEFAULT_PYVER
 input_yaml_file=source_environment.yml
 developer=false
 # Default is to use conda to install since mamba fails on some systems
 install_pgm=conda
 while getopts "p:d" options; do
     case "${options}" in                    # 
-    p)
-        PYVER=$OPTARG
-        ;;
+#    p)
+#        PYVER=$OPTARG
+#        ;;
     d)
         developer=true
         ;;
@@ -50,7 +51,7 @@ while getopts "p:d" options; do
 done
 
 echo "YAML file to use as input: ${input_yaml_file}"
-echo "Using python version ${PYVER}"
+#echo "Using python version ${PYVER}"
 
 # Name of virtual environment, pull from yml file
 VENV=`grep "name:" source_environment.yml  | cut -f2 -d ":" | sed 's/ //g'`
@@ -160,11 +161,13 @@ conda remove -y -n $VENV --all
 conda clean -y --all
 
 # Install the virtual environment
-echo "Creating new environment from environment file: ${input_yaml_file} with python version ${PYVER}"
+# echo "Creating new environment from environment file: ${input_yaml_file} with python version ${PYVER}"
+echo "Creating new environment from environment file: ${input_yaml_file}"
 # change python version in yaml file to match PYVER
-sed 's/python='"${DEFAULT_PYVER}"'/python='"${PYVER}"'/' "${input_yaml_file}" > tmp.yml
-${install_pgm} env create -f tmp.yml
-rm tmp.yml 
+# sed 's/python='"${DEFAULT_PYVER}"'/python='"${PYVER}"'/' "${input_yaml_file}" > tmp.yml
+# ${install_pgm} env create -f tmp.yml
+${install_pgm} env create -f ${input_yaml_file}
+# rm tmp.yml 
 
 
 # Bail out at this point if the conda create command fails.
