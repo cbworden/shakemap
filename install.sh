@@ -15,16 +15,13 @@ usage()
 unamestr=`uname`
 if [ "$unamestr" == 'Linux' ]; then
     prof=~/.bashrc
-    mini_conda_url=https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    matplotlibdir=~/.config/matplotlib
 elif [ "$unamestr" == 'FreeBSD' ] || [ "$unamestr" == 'Darwin' ]; then
     prof=~/.bash_profile
-    mini_conda_url=https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
-    matplotlibdir=~/.matplotlib
 else
     echo "Unsupported environment. Exiting."
     exit
 fi
+
 
 # execute the user's profile
 source $prof
@@ -37,10 +34,7 @@ developer=false
 # Default is to use conda to install since mamba fails on some systems
 install_pgm=conda
 while getopts "p:d" options; do
-    case "${options}" in                    # 
-#    p)
-#        PYVER=$OPTARG
-#        ;;
+    case "${options}" in 
     d)
         developer=true
         ;;
@@ -65,32 +59,6 @@ echo "######Location of conda install: ${CONDA_LOC}"
 CURRENT_ENV=`conda info --envs | grep "*"`
 echo "Current conda environment: ${CURRENT_ENV}"
 
-# create a matplotlibrc file with the non-interactive backend "Agg" in it.
-if [ ! -d "$matplotlibdir" ]; then
-    mkdir -p $matplotlibdir
-    # if mkdir fails, bow out gracefully
-    if [ $? -ne 0 ];then
-        echo "Failed to create matplotlib configuration file. Exiting."
-        exit 1
-    fi
-fi
-
-matplotlibrc=$matplotlibdir/matplotlibrc
-if [ ! -e "$matplotlibrc" ]; then
-    echo "backend : Agg" > "$matplotlibrc"
-    echo "NOTE: A non-interactive matplotlib backend (Agg) has been set for this user."
-elif grep -Fxq "backend : Agg" $matplotlibrc ; then
-    :
-elif [ ! grep -Fxq "backend" $matplotlibrc ]; then
-    echo "backend : Agg" >> $matplotlibrc
-    echo "NOTE: A non-interactive matplotlib backend (Agg) has been set for this user."
-else
-    sed -i '' 's/backend.*/backend : Agg/' $matplotlibrc
-    echo "###############"
-    echo "NOTE: $matplotlibrc has been changed to set 'backend : Agg'"
-    echo "###############"
-fi
-
 # Is conda installed?
 conda --version
 if [ $? -ne 0 ]; then
@@ -98,7 +66,8 @@ if [ $? -ne 0 ]; then
 
     command -v curl >/dev/null 2>&1 || { echo >&2 "Script requires curl but it's not installed. Aborting."; exit 1; }
 
-    curl -L $mini_conda_url -o miniconda.sh;
+    miniforge_url="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+    curl -L $miniforge_url -o miniforge.sh &>/dev/null
 
     # if curl fails, bow out gracefully
     if [ $? -ne 0 ];then
@@ -108,9 +77,9 @@ if [ $? -ne 0 ]; then
     
     echo "Install directory: $HOME/miniconda"
 
-    bash miniconda.sh -f -b -p $HOME/miniconda
+    bash miniforge.sh -f -b -p $HOME/miniconda &>/dev/null
 
-    # if miniconda.sh fails, bow out gracefully
+    # if miniforge.sh fails, bow out gracefully
     if [ $? -ne 0 ];then
         echo "Failed to run miniconda installer shell script. Exiting."
         exit 1
@@ -119,7 +88,7 @@ if [ $? -ne 0 ]; then
     . $HOME/miniconda/etc/profile.d/conda.sh
 
     # remove the shell script
-    rm miniconda.sh
+    rm miniforge.sh
 else
     echo "conda detected, installing $VENV environment..."
 fi
@@ -141,6 +110,9 @@ if [ ${LATEST} != ${CVNUM} ]; then
 else
     echo "conda ${CVNUM} already matches latest version ${LATEST}. No update required."
 fi
+
+# Set libmamba as solver
+conda config --set solver libmamba &>/dev/null
 
 # Start in conda base environment
 echo "Activate base virtual environment"
@@ -191,6 +163,14 @@ fi
 # install to fail... just to be safe, we'll delete it here.
 if [ -d bin/__pycache__ ]; then
     rm -rf bin/__pycache__
+fi
+
+# Do mac-specific conda installs
+if [ "$unamestr" == 'FreeBSD' ] || [ "$unamestr" == 'Darwin' ]; then
+    # This is motivated by the mysterios pyproj/rasterio error and incorrect results
+    # that only happen on ARM macs. 
+    # https://github.com/conda-forge/pyproj-feedstock/issues/156
+    conda install -c conda-forge -y libgdal-netcdf
 fi
 
 if $developer; then
