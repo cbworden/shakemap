@@ -131,7 +131,7 @@ if [ ${LATEST} != ${CVNUM} ]; then
     echo "##################Updating conda tool..."
     CVERSION=`conda -V`
     echo "Current conda version: ${CVERSION}"
-    conda update -n base -c defaults conda -y
+    conda update -n base conda -y
     CVERSION=`conda -V`
     echo "New conda version: ${CVERSION}"
     echo "##################Done updating conda tool..."
