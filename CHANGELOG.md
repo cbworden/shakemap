@@ -1,5 +1,9 @@
 ## main
 
+    - Limit python to 3.12.7 and sqlite to 3.46.1 in source_environment.yml to                
+deal with sqlite suddenly enforcing the restriction that double quotes                  
+can't be used for string literals.
+
 ## v4.4.0c / 2024-09-06
     - Pin to shakemap-modules v1.0.23
     - Implicitly pin to esi-shakelib v1.0.14
