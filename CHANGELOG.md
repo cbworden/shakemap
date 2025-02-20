@@ -1,5 +1,6 @@
 ## main
 
+## v4.4.1 / 2025-02-20
     - Limit python to 3.12.7 and sqlite to 3.46.1 in source_environment.yml to                
 deal with sqlite suddenly enforcing the restriction that double quotes                  
 can't be used for string literals.
