@@ -2,8 +2,7 @@ name: shakemap
 channels:
   - conda-forge
 dependencies:
-  - python>=3.12,<=3.12.7
-  - sqlite<=3.46.1
+  - python>=3.12,<3.13
   - pip
   - rasterio
   - libgdal-netcdf

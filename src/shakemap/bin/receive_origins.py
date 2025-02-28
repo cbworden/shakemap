@@ -17,9 +17,6 @@ import time
 from datetime import datetime
 
 # third-party imports
-
-# local imports
-import shakemap.utils.queue as queue
 from esi_utils_comcat.query import GeoServe
 from esi_utils_geo.compass import get_compass_dir_azimuth
 from esi_utils_rupture import constants
@@ -27,6 +24,9 @@ from shakemap_modules.utils.comcat import get_detail_json
 from shakemap_modules.utils.config import get_config_paths
 from shakemap_modules.utils.logging import get_generic_logger
 from shakemap_modules.utils.utils import get_network_name
+
+# local imports
+from shakemap.utils import queue
 
 LOGFILE = "origins.log"
 
@@ -56,16 +56,24 @@ def get_parser():
         help="Event review status ('automatic', 'reviewed')",
     )
 
-    parser.add_argument("--preferred-eventid", help="Event ID (i.e., us2008abcd)")
+    parser.add_argument(
+        "--preferred-eventid", help="Event ID (i.e., us2008abcd)"
+    )
     parser.add_argument(
         "--preferred-eventsource", help='Event source ("us", "nc", etc.)'
     )
     parser.add_argument(
         "--preferred-eventsourcecode", help="Event source code (i.e., 2008abcd"
     )
-    parser.add_argument("--preferred-magnitude", type=float, help="Event magnitude")
-    parser.add_argument("--preferred-latitude", type=float, help="Event latitude")
-    parser.add_argument("--preferred-longitude", type=float, help="Event longitude")
+    parser.add_argument(
+        "--preferred-magnitude", type=float, help="Event magnitude"
+    )
+    parser.add_argument(
+        "--preferred-latitude", type=float, help="Event latitude"
+    )
+    parser.add_argument(
+        "--preferred-longitude", type=float, help="Event longitude"
+    )
     parser.add_argument("--preferred-depth", type=float, help="Event depth")
     parser.add_argument("--preferred-eventtime", help="Event time")
     parser.add_argument("--eventids", type=str, help="Alternate event IDs")
@@ -136,7 +144,8 @@ def main():
         or not args.preferred_magnitude
     ):
         logger.info(
-            "Missing event parameters for event %s, skipping", args.preferred_eventid
+            "Missing event parameters for event %s, skipping",
+            args.preferred_eventid,
         )
         sys.exit(0)
 
@@ -149,7 +158,8 @@ def main():
             logger.warn(f"Libcomcat error: {str(e)}")
             logger.warn(
                 "Error retrieving event data from comcat for event "
-                "%s, will try %d more times" % (args.preferred_eventid, 3 - fails)
+                "%s, will try %d more times"
+                % (args.preferred_eventid, 3 - fails)
             )
             time.sleep(20)
             continue
@@ -227,7 +237,9 @@ def main():
                     azimuth = azimuth - 360
                 location = "%d km %s of %s, %s, %s" % (
                     int(props["distance"]),
-                    get_compass_dir_azimuth(azimuth, resolution="meteorological"),
+                    get_compass_dir_azimuth(
+                        azimuth, resolution="meteorological"
+                    ),
                     props["name"],
                     props["admin1_name"],
                     country,
@@ -236,7 +248,9 @@ def main():
                 region = gs.getRegions()
                 if region is not None:
                     try:
-                        location = region["fe"]["features"][0]["properties"]["name"]
+                        location = region["fe"]["features"][0]["properties"][
+                            "name"
+                        ]
                     except KeyError:
                         location = ""
                     except IndexError:

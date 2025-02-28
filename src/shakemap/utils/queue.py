@@ -10,7 +10,7 @@ import socket
 import sqlite3
 import subprocess
 import sys
-import time as time
+import time
 from collections import OrderedDict
 from datetime import datetime, timezone
 from logging.handlers import TimedRotatingFileHandler
@@ -210,7 +210,8 @@ class Queue(object):
                 logger = self.getLogger()
                 logger.error(
                     "pid lock file '%s' exists, can't start "
-                    "sm_queue; exiting..." % (pidfile)
+                    "sm_queue; exiting...",
+                    pidfile,
                 )
                 sys.exit(-1)
 
@@ -238,7 +239,9 @@ class Queue(object):
             #
             # Get a connection to the event database
             #
-            self.ampHandler = AmplitudeHandler(self.install_path, self.data_path)
+            self.ampHandler = AmplitudeHandler(
+                self.install_path, self.data_path
+            )
 
             self.logger.info("sm_queue initiated")
 
@@ -248,14 +251,17 @@ class Queue(object):
             #
             running = self.eventQueue.getRunningEvents()
             for eventid, command in running:
-                self.logger.info(f"Startup: Running event {eventid}")
+                self.logger.info("Startup: Running event %s", eventid)
                 event = self.ampHandler.getEvent(eventid)
                 # Update the XML because the DB may have newer information
                 self.writeEventXml(event)
                 if "reviewed" in event and event["reviewed"] == "true":
                     self.writeRewiewedOriginTransferConf(event)
                 p = subprocess.Popen(command)
-                self.children[eventid] = {"popen": p, "start_time": time.time()}
+                self.children[eventid] = {
+                    "popen": p,
+                    "start_time": time.time(),
+                }
 
             while True:
                 #
@@ -278,11 +284,15 @@ class Queue(object):
                 #
                 hostname, _, _ = socket.gethostbyaddr(address[0])
                 #            hostname = socket.getfqdn(hostname)
-                self.logger.info(f"Got connection from {hostname} at port {address[1]}")
+                self.logger.info(
+                    "Got connection from %s at port %s", hostname, address[1]
+                )
 
                 if hostname not in self.config["servers"]:
                     self.logger.warning(
-                        f"Connection from {hostname} refused: not in valid servers list"
+                        "Connection from %s refused: "
+                        "not in valid servers list",
+                        hostname,
                     )
                     clientsocket.close()
                     continue
@@ -296,7 +306,7 @@ class Queue(object):
                     data = clientsocket.recv(MAX_SIZE)
                 except socket.timeout:
                     self.logger.warning(
-                        "Did not get data from connection, " "continuing"
+                        "Did not get data from connection, continuing"
                     )
                     clientsocket.close()
                     continue
@@ -309,7 +319,7 @@ class Queue(object):
                     cmd = json.loads(data.decode("utf8"))
                 except json.decoder.JSONDecodeError:
                     self.logger.warning(
-                        f"Couldn't decode data from {hostname}: ignoring"
+                        "Couldn't decode data from %s: ignoring", hostname
                     )
                     continue
 
@@ -319,12 +329,12 @@ class Queue(object):
                     or "data" not in cmd
                     or "id" not in cmd["data"]
                 ):
-                    self.logger.warning(f"Bad data from {hostname}: ignoring")
+                    self.logger.warning("Bad data from %s: ignoring", hostname)
                     continue
 
                 if cmd["type"] == "origin":
                     self.logger.info(
-                        f"Received \"origin\" for event {cmd['data']['id']}"
+                        'Received "origin" for event %s', cmd["data"]["id"]
                     )
                     if "action" in cmd["data"]:
                         action = cmd["data"]["action"]
@@ -333,12 +343,14 @@ class Queue(object):
                     self.processOrigin(cmd["data"], action)
                 elif cmd["type"] == "cancel":
                     self.logger.info(
-                        f"Received \"cancel\" for event {cmd['data']['id']}"
+                        'Received "cancel" for event %s', cmd["data"]["id"]
                     )
                     self.processCancel(cmd["data"])
                 else:
                     self.logger.info(
-                        'Received "%s" for event %s' % cmd["type"], cmd["data"]["id"]
+                        'Received "%s" for event %s',
+                        cmd["type"],
+                        cmd["data"]["id"],
                     )
                     self.processOther(cmd["data"], cmd["type"])
 
@@ -354,7 +366,7 @@ class Queue(object):
         #
         current_time = int(time.time())
         repeats = self.ampHandler.getRepeats()
-        for eventid, otime, rep_list in repeats:
+        for eventid, _, rep_list in repeats:
             while rep_list is not None and rep_list[0] < current_time:
                 event = self.ampHandler.getEvent(eventid)
                 if eventid in self.children:
@@ -375,17 +387,21 @@ class Queue(object):
                 if event["lastrun"] == 0:
                     # This is a delayed first run or possibly just a very
                     # old event being updated
-                    event_dir = os.path.join(self.data_path, eventid, "current")
+                    event_dir = os.path.join(
+                        self.data_path, eventid, "current"
+                    )
                     if not os.path.isdir(event_dir):
                         self.logger.info(
-                            f"Queueing event {eventid} after network delay"
+                            "Queueing event %s after network delay", eventid
                         )
                         self.dispatchEvent(event, "Event added")
                     else:
-                        self.logger.info(f"Queueing old event {eventid} for update")
+                        self.logger.info(
+                            "Queueing old event %s for update", eventid
+                        )
                         self.dispatchEvent(event, "Event updated")
                 else:
-                    self.logger.info(f"Queueing repeat of event {eventid}")
+                    self.logger.info("Queueing repeat of event %s", eventid)
                     self.dispatchEvent(event, "Scheduled repeat")
                 break
 
@@ -413,7 +429,7 @@ class Queue(object):
             self.MEMORY_UPDATE_TIME = current_time
             process = psutil.Process(os.getpid())
             mem = getattr(process.memory_full_info(), "uss", 0) / 1048576.0
-            self.logger.info(f"Currently using {mem:.1f} MB")
+            self.logger.info("Currently using %.1f MB", mem)
 
         #
         # Do the occasional DB cleanup once per day; keep amps for 30
@@ -450,9 +466,12 @@ class Queue(object):
             handler = logging.StreamHandler()
         else:
             logfile = os.path.join(self.logpath, "queue.log")
-            handler = TimedRotatingFileHandler(logfile, when="midnight", backupCount=30)
+            handler = TimedRotatingFileHandler(
+                logfile, when="midnight", backupCount=30
+            )
         formatter = logging.Formatter(
-            fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            fmt="%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
@@ -490,7 +509,7 @@ class Queue(object):
             try:
                 dt = datetime.strptime(ttemp, constants.ALT_TIMEFMT)
             except ValueError:
-                self.logger.error(f"Can't parse input time {ttemp}")
+                self.logger.error("Can't parse input time %s", ttemp)
                 return
         event["time"] = dt
 
@@ -499,17 +518,18 @@ class Queue(object):
             os.makedirs(event_dir)
         event_xml = os.path.join(event_dir, "event.xml")
 
-        self.logger.info(f"Writing event {event['id']} to event.xml")
+        self.logger.info("Writing event %s to event.xml", event["id"])
         val = write_event_file(event, event_xml)
         if val:
-            self.logger.error(f"Error writing event.xml: {val}")
+            self.logger.error("Error writing event.xml: %s", val)
 
         event["time"] = ttemp
 
         return
 
     def writeRewiewedOriginTransferConf(self, event):
-        """Copy transfer_reviewed_origin.conf to an event-specific transfer.conf.
+        """Copy transfer_reviewed_origin.conf to an event-specific
+        transfer.conf.
 
         Args:
             event (dict): The event data structure.
@@ -522,8 +542,8 @@ class Queue(object):
         if not os.path.isdir(event_dir):
             os.makedirs(event_dir)
         event_file = os.path.join(event_dir, "transfer.conf")
-        # Don't overwrite the event-specific transfer.conf if it exists, because
-        # the operator may have customized it.
+        # Don't overwrite the event-specific transfer.conf if it exists,
+        # because the operator may have customized it.
         if os.path.isfile(event_file) is False:
             shutil.copy(f"{transfer_file}", event_file)
         return
@@ -532,11 +552,15 @@ class Queue(object):
         """Change the name of an existing event directory to a new ID."""
         try:
             shutil.move(
-                os.path.join(self.data_path, oldid), os.path.join(self.data_path, newid)
+                os.path.join(self.data_path, oldid),
+                os.path.join(self.data_path, newid),
             )
         except shutil.Error as e:
             self.logger(
-                f"Error trying to move data directory {oldid} to {newid}: {str(e)}"
+                "Error trying to move data directory %s to %s: %s",
+                oldid,
+                newid,
+                str(e),
             )
         return
 
@@ -597,12 +621,15 @@ class Queue(object):
             # Do we want to run this event?
             if not force_run and self.magnitudeTooSmall(event):
                 self.logger.info(
-                    f"Event {event['id']} (mag={event['mag']:f}) too small, skipping"
+                    "Event %s (mag=%f) too small, skipping",
+                    event["id"],
+                    event["mag"],
                 )
                 return
             if not force_run and self.eventTooOldOrInFuture(event):
                 self.logger.info(
-                    f"Event {event['id']} too old or too far in the future, skipping"
+                    "Event %s too old or too far in the future, skipping",
+                    event["id"],
                 )
                 return
             #
@@ -614,9 +641,13 @@ class Queue(object):
                 dt = datetime.strptime(event["time"], constants.TIMEFMT)
             except ValueError:
                 try:
-                    dt = datetime.strptime(event["time"], constants.ALT_TIMEFMT)
+                    dt = datetime.strptime(
+                        event["time"], constants.ALT_TIMEFMT
+                    )
                 except ValueError:
-                    self.logger.error(f"Can't parse input time {event['time']}")
+                    self.logger.error(
+                        "Can't parse input time %s", event["time"]
+                    )
                     return
             event_timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
             for mag in sorted(self.config["repeats"].keys(), reverse=True):
@@ -639,7 +670,8 @@ class Queue(object):
                 if event_timestamp + delay > current_time:
                     self.logger.info(
                         "Delaying processing event %s due to "
-                        "network delay configuration." % (event["id"])
+                        "network delay configuration.",
+                        (event["id"]),
                     )
                     replist.insert(0, event_timestamp + delay)
                     dispatch = False
@@ -695,7 +727,9 @@ class Queue(object):
                         return
             self.logger.info(
                 'Trigger of action "%s" is for unprocessed '
-                "event %s: ignoring" % (action, data["id"])
+                "event %s: ignoring",
+                action,
+                data["id"],
             )
         return
 
@@ -728,7 +762,9 @@ class Queue(object):
                     self.ampHandler.insertEvent(existing, update=True)
                     return
 
-        self.logger.info(f"cancel is for unprocessed event {eventid}: ignoring")
+        self.logger.info(
+            "cancel is for unprocessed event %s: ignoring", eventid
+        )
         return
 
     def magnitudeTooSmall(self, event):
@@ -821,9 +857,9 @@ class Queue(object):
             #
             # Cancellations aren't queued, they're run immediately
             #
-            self.logger.info(f"Canceling event {eventid}")
+            self.logger.info("Canceling event %s", eventid)
             if eventid in self.children:
-                self.logger.info(f"Event {eventid} is running; killing...")
+                self.logger.info("Event %s is running; killing...", eventid)
                 self.children[eventid]["popen"].kill()
                 self.children[eventid]["popen"].wait()
                 del self.children[eventid]
@@ -838,7 +874,9 @@ class Queue(object):
             self.eventQueue.insertRunningEvent(eventid, cmd)
             return
 
-        self.logger.info(f'Queueing event {eventid} due to action "{action}"')
+        self.logger.info(
+            'Queueing event %s due to action "%s"', eventid, action
+        )
         #
         # Add the action as the assemble/augment comment, or replace the
         # comment if it is already there.
@@ -871,7 +909,9 @@ class Queue(object):
     def runQueuedEvents(self):
         """If there is space, run events from the queue"""
         if len(self.children) >= self.config["max_subprocesses"]:
-            self.logger.info("Processing queue is full; waiting for open slots.")
+            self.logger.info(
+                "Processing queue is full; waiting for open slots."
+            )
             return
         current_time = int(time.time())
         mtw = self.config["max_trigger_wait"]
@@ -890,7 +930,8 @@ class Queue(object):
                     event["repeats"] = [current_time + mtw]
                 self.ampHandler.insertEvent(event, update=True)
                 self.logger.info(
-                    f"Event {event['id']} is currently running, shelving this update"
+                    "Event %s is currently running, shelving this update",
+                    event["id"],
                 )
                 self.eventQueue.dequeueEvent(eventid)
                 continue
@@ -900,7 +941,8 @@ class Queue(object):
                     # We're due for a rerun anyway, so just leave the
                     # event queued
                     self.logger.info(
-                        f"Event {eventid} will repeat soon, shelving this update"
+                        "Event %s will repeat soon, shelving this update",
+                        eventid,
                     )
                     self.eventQueue.dequeueEvent(eventid)
                     continue
@@ -916,12 +958,12 @@ class Queue(object):
                     event["repeats"] = [current_time + mtw]
                 self.ampHandler.insertEvent(event, update=True)
                 self.logger.info(
-                    f"Event {event['id']} ran recently, shelving this update"
+                    "Event %s ran recently, shelving this update", event["id"]
                 )
                 self.eventQueue.dequeueEvent(eventid)
                 continue
 
-            self.logger.info(f"Running event {eventid}")
+            self.logger.info("Running event %s", eventid)
             # Update the XML because the DB may have newer information
             self.writeEventXml(event)
             if "reviewed" in event and event["reviewed"] == "true":
@@ -931,7 +973,9 @@ class Queue(object):
             self.eventQueue.dequeueEvent(eventid)
             self.eventQueue.insertRunningEvent(eventid, command)
             if len(self.children) >= self.config["max_subprocesses"]:
-                self.logger.info("Processing queue is full; waiting for open " "slots.")
+                self.logger.info(
+                    "Processing queue is full; waiting for open slots."
+                )
                 break
 
         return
@@ -951,7 +995,9 @@ class Queue(object):
             returncode = info["popen"].poll()
             if returncode is not None:
                 self.logger.info(
-                    "Reaped child for event %s (return code %d)" % (eventid, returncode)
+                    "Reaped child for event %s (return code %d)",
+                    eventid,
+                    returncode,
                 )
                 event = self.ampHandler.getEvent(eventid)
                 if event:
@@ -963,11 +1009,18 @@ class Queue(object):
             #
             # Kill children who take too long
             #
-            if info["start_time"] + self.config["max_process_time"] < current_time:
-                self.logger.warning(f"Event {eventid} taking too long, killing")
+            if (
+                info["start_time"] + self.config["max_process_time"]
+                < current_time
+            ):
+                self.logger.warning(
+                    "Event %s taking too long, killing", eventid
+                )
                 info["popen"].kill()
                 info["popen"].wait()
-                self.logger.warning(f"Reaped child for killed event {eventid}")
+                self.logger.warning(
+                    "Reaped child for killed event %s", eventid
+                )
                 to_delete.append(eventid)
                 self.eventQueue.deleteRunningEvent(eventid)
 
@@ -1004,7 +1057,7 @@ class Dummycontext(object):
     def __enter__(self):
         return self
 
-    def __exit__(*x):
+    def __exit__(self, *x):
         pass
 
 
@@ -1048,9 +1101,11 @@ class EventQueue(object):
                     nuggets.append(f"{column} {ctype}")
                 createcmd += ",".join(nuggets) + ")"
                 self._cursor.execute(createcmd)
-            self._cursor.execute("CREATE INDEX queue_index ON " "queued(eventid)")
-            self._cursor.execute("CREATE INDEX mag_index ON " "queued(mag)")
-            self._cursor.execute("CREATE INDEX event_index ON " "running(eventid)")
+            self._cursor.execute("CREATE INDEX queue_index ON queued(eventid)")
+            self._cursor.execute("CREATE INDEX mag_index ON queued(mag)")
+            self._cursor.execute(
+                "CREATE INDEX event_index ON running(eventid)"
+            )
             self._cursor.execute("PRAGMA journal_mode = WAL")
 
     def __del__(self):

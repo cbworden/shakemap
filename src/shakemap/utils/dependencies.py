@@ -180,18 +180,26 @@ class CommandDatabase(object):
             if cd["class"].dependencies is not None:
                 for depend in cd["class"].dependencies:
                     dependencies.append(
-                        (cmd, os.path.join(event_path, depend[0]), int(depend[1]))
+                        (
+                            cmd,
+                            os.path.join(event_path, depend[0]),
+                            int(depend[1]),
+                        )
                     )
             # Configs are dependencies, too, they just live in a different
             # directory
             if cd["class"].configs is not None:
                 for config in cd["class"].configs:
-                    dependencies.append((cmd, os.path.join(config_path, config), 1))
+                    dependencies.append(
+                        (cmd, os.path.join(config_path, config), 1)
+                    )
 
             self.cmdsums[cmd] = sha_sum(cd["mfile"])
 
         if len(dependencies) > 0:
-            cur.executemany("INSERT into dependencies values (?, ?, ?)", dependencies)
+            cur.executemany(
+                "INSERT into dependencies values (?, ?, ?)", dependencies
+            )
             con.commit()
 
         #
@@ -278,7 +286,9 @@ class CommandDatabase(object):
         # descendents: set() gets the unique elements, sorted() puts
         # them in proper order based on tree "level", and the list
         # comprehension extracts the command name into a list.
-        status = [x[0] for x in sorted(set(status), key=lambda x: x[1], reverse=True)]
+        status = [
+            x[0] for x in sorted(set(status), key=lambda x: x[1], reverse=True)
+        ]
         return status
 
     def __traceLeaf(self, leaf):
@@ -300,7 +310,10 @@ class CommandDatabase(object):
             # If command is out of date, all descendent commands need to be
             # rerun; otherwise ok
             #
-            sql = "SELECT checksum FROM cmd_checksums WHERE command=? AND " "eventid=?"
+            sql = (
+                "SELECT checksum FROM cmd_checksums "
+                "WHERE command=? AND eventid=?"
+            )
             self.fcursor.execute(sql, (leaf.cmd(), self.eventid))
             result = self.fcursor.fetchall()
 
@@ -320,7 +333,9 @@ class CommandDatabase(object):
                 for exp in explist:
                     found_target = False
                     files = glob.glob(os.path.join(self.event_path, "*"))
-                    files += glob.glob(os.path.join(self.event_path, "products", "*"))
+                    files += glob.glob(
+                        os.path.join(self.event_path, "products", "*")
+                    )
                     for filename in files:
                         if exp.fullmatch(filename):
                             found_target = True
@@ -337,12 +352,17 @@ class CommandDatabase(object):
             # If dep file is out of date, child command and all descendent
             # commands need to be rerun
             #
-            sql = "SELECT checksum FROM file_checksums WHERE command=? " "AND file=?"
+            sql = (
+                "SELECT checksum FROM file_checksums "
+                "WHERE command=? AND file=?"
+            )
             for pattern, required in leaf.deps():
                 found = glob.glob(pattern)
                 if len(found) == 0 and required:
                     # Didn't find a required file -- this prevents a run
-                    logging.warning(f"Did not find required dependency: {pattern}")
+                    logging.warning(
+                        "Did not find required dependency: %s", pattern
+                    )
                     clean = False
                     break
                 if len(found) > 0:
@@ -400,7 +420,8 @@ class CommandDatabase(object):
     def __getDependencies(self, cmd):
         """Internal function to get the file dependencies of a command."""
         self.ccursor.execute(
-            "SELECT dependency, required FROM dependencies WHERE command=?", (cmd,)
+            "SELECT dependency, required FROM dependencies WHERE command=?",
+            (cmd,),
         )
         return self.ccursor.fetchall()
 
