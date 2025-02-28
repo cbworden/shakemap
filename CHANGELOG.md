@@ -1,5 +1,6 @@
 ## main
 
+## v4.4.2 / 2025-02-28
     - Refactor strings for sqlite to single quote string literals.
     - Refactor to emove a bunch of linter warnings.
     - Eliminate a bunch of deprecation warnings (datetime.utcnow(), etc.)
