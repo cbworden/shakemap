@@ -6,4 +6,3 @@ dependencies:
   - pip
   - rasterio
   - libgdal-netcdf
-

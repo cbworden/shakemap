@@ -31,7 +31,17 @@ source $prof
 
 # Parse the command line arguments passed in by the user
 # PYVER=$DEFAULT_PYVER
-input_yaml_file=source_environment.yml
+
+# Do mac-specific conda installs
+if [ "$unamestr" == 'FreeBSD' ] || [ "$unamestr" == 'Darwin' ]; then
+    # This is motivated by the mysterios pyproj/rasterio error and incorrect results
+    # that only happen on ARM macs. 
+    # https://github.com/conda-forge/pyproj-feedstock/issues/156
+    input_yaml_file=osx_environment.yml
+else
+    input_yaml_file=linux_environment.yml
+fi
+
 developer=false
 # Default is to use conda to install since mamba fails on some systems
 install_pgm=conda
@@ -193,17 +203,11 @@ if [ -d bin/__pycache__ ]; then
     rm -rf bin/__pycache__
 fi
 
-# Do mac-specific conda installs
-if [ "$unamestr" == 'FreeBSD' ] || [ "$unamestr" == 'Darwin' ]; then
-    # This is motivated by the mysterios pyproj/rasterio error and incorrect results
-    # that only happen on ARM macs. 
-    # https://github.com/conda-forge/pyproj-feedstock/issues/156
-    conda install -c conda-forge -y libgdal-netcdf
-fi
+
 
 if $developer; then
     echo "############# Installing shakemap with developer tools ##############"
-    conda install mathjax
+    conda install mathjax -y
     if ! pip install -e '.[dev,test,doc]' ; then
         echo "Installation of shakemap failed."
         exit 1
